@@ -26,11 +26,12 @@ app.use(express.static(path.join(__dirname, '../')));
 const usageStats = {}; // { ip: { count: number, isPro: boolean } }
 const FREE_LIMIT = 3;
 
-// ─── ENDPOINTS ───
+// ─── ROUTES (API) ───
+const router = express.Router();
 
 // 1. Sync user status (credits + pro)
-app.get('/status', (req, res) => {
-  const ip = req.ip;
+router.get('/status', (req, res) => {
+  const ip = req.headers['x-forwarded-for'] || req.ip;
   if (!usageStats[ip]) {
     usageStats[ip] = { count: 0, isPro: false };
   }
@@ -42,8 +43,8 @@ app.get('/status', (req, res) => {
 });
 
 // 2. Mock Checkout (UPGRADE TO PRO)
-app.post('/checkout', (req, res) => {
-  const ip = req.ip;
+router.post('/checkout', (req, res) => {
+  const ip = req.headers['x-forwarded-for'] || req.ip;
   if (!usageStats[ip]) usageStats[ip] = { count: 0, isPro: false };
   
   usageStats[ip].isPro = true;
@@ -53,13 +54,11 @@ app.post('/checkout', (req, res) => {
 });
 
 // 3. Main Analysis Proxy
-app.post('/analyze', async (req, res) => {
-  const ip = req.ip;
+router.post('/analyze', async (req, res) => {
+  const ip = req.headers['x-forwarded-for'] || req.ip;
   const API_KEY = process.env.GEMINI_API_KEY;
 
-  if (!usageStats[ip]) {
-    usageStats[ip] = { count: 0, isPro: false };
-  }
+  if (!usageStats[ip]) usageStats[ip] = { count: 0, isPro: false };
 
   // Check Limit
   if (!usageStats[ip].isPro && usageStats[ip].count >= FREE_LIMIT) {
@@ -69,10 +68,10 @@ app.post('/analyze', async (req, res) => {
   }
 
   const { model, contents, generationConfig } = req.body;
-  console.log(`[Backend] Analyzing with model: ${model} for IP: ${ip} (Pro: ${usageStats[ip].isPro})`);
+  const analysisModel = model || "gemini-2.0-flash";
 
   try {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${API_KEY}`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${analysisModel}:generateContent?key=${API_KEY}`;
     
     const response = await fetch(url, {
       method: 'POST',
@@ -83,36 +82,34 @@ app.post('/analyze', async (req, res) => {
     const data = await response.json();
 
     if (response.ok) {
-      if (!usageStats[ip].isPro) {
-        usageStats[ip].count++;
-      }
+      if (!usageStats[ip].isPro) usageStats[ip].count++;
       
       return res.json({
         ...data,
         creditsRemaining: usageStats[ip].isPro ? null : Math.max(0, FREE_LIMIT - usageStats[ip].count)
       });
     } else {
-      console.error('[Backend] Google API Error:', data);
-      return res.status(response.status).json({ 
-        error: { message: 'Technical Analysis failed. Please try again later.' } 
-      });
+      return res.status(response.status).json(data);
     }
   } catch (error) {
-    console.error('[Backend] Critical Error:', error);
     res.status(500).json({ error: { message: 'Internal server proxy error' } });
   }
 });
 
-// 4. Utility: List models
-app.get('/models', async (req, res) => {
-  const API_KEY = process.env.GEMINI_API_KEY;
-  try {
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${API_KEY}`);
-    const data = await response.json();
-    res.json(data);
-  } catch (e) {
-    res.status(500).json({ error: e.message });
+// Mount the router
+app.use('/api', router);
+// Support legacy/direct calls without /api if needed (for local)
+app.use(router);
+
+// ─── SERVE FRONTEND (NUCLEAR FALLBACK) ───
+// This ensures that even if Vercel routes incorrectly, the API can serve the UI.
+app.get('*', (req, res) => {
+  // If it's an API route that wasn't caught above, send 404 JSON
+  if (req.path.startsWith('/api/')) {
+    return res.status(404).json({ error: { message: 'API Endpoint not found' } });
   }
+  // Otherwise, always serve the main website
+  res.sendFile(path.join(__dirname, '../index.html'));
 });
 
 // Standard Vercel Export
