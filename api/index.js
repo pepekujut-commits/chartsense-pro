@@ -3,15 +3,24 @@ const express = require('express');
 const cors = require('cors');
 const fetch = require('node-fetch');
 
+const path = require('path');
+
 const app = express();
 const PORT = process.env.PORT || 3001;
 
 // ─── MIDDLEWARE ───
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
-// Note: Vercel serves static files from the root automatically, 
-// so express.static is only needed for local development.
-app.use(express.static('./')); 
+
+// ─── SERVE FRONTEND ───
+// On Vercel, static files in the root are served automatically.
+// However, if the API is configured to handle the root, we serve the file manually.
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, '../index.html'));
+});
+
+// Explicitly serve other static assets if needed
+app.use(express.static(path.join(__dirname, '../')));
 
 // ─── IN-MEMORY STATE ───
 const usageStats = {}; // { ip: { count: number, isPro: boolean } }
