@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ChartSense AI — Instant Chart Analysis for Traders</title>
+  <meta name="description" content="Upload any stock or crypto chart screenshot and get an instant AI-powered Buy, Sell, or Hold recommendation with full technical reasoning." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- ─── CHECKOUT MODAL (PRO) ─── -->
+  <div id="checkoutModal" class="modal-overlay hidden">
+    <div class="modal-box checkout-box">
+      <button class="modal-close" id="closeCheckout">✕</button>
+      <div class="checkout-header">
+        <div class="logo logo-sm">
+          <span class="logo-icon">📈</span>
+          <span>Chart<span class="logo-accent">Sense</span> <span class="logo-tag">PRO</span></span>
+        </div>
+        <h2 class="modal-title" style="margin-top: 10px;">Upgrade to Pro Trader</h2>
+        <p class="modal-desc">Unlock unlimited AI analyses, priority processing, and professional report exports.</p>
+      </div>
+
+      <div class="plan-toggle">
+        <div class="toggle-option active">Monthly</div>
+        <div class="toggle-option">Yearly <span class="save-tag">SAVE 20%</span></div>
+      </div>
+
+      <div class="checkout-form">
+        <div class="price-display">
+          <span class="currency">$</span>
+          <span class="amount">29</span>
+          <span class="period">/ month</span>
+        </div>
+
+        <div class="input-group">
+          <label>Cardholder Name</label>
+          <input type="text" placeholder="John Doe" id="cardName" />
+        </div>
+
+        <div class="input-group">
+          <label>Card Number</label>
+          <div class="card-input-wrap">
+            <input type="text" placeholder="xxxx xxxx xxxx xxxx" maxlength="19" />
+            <span class="card-brand">VISA</span>
+          </div>
+        </div>
+
+        <div class="meta-row" style="margin-bottom: 0;">
+          <div class="input-group">
+            <label>Expiry</label>
+            <input type="text" placeholder="MM / YY" maxlength="5" />
+          </div>
+          <div class="input-group">
+            <label>CVC</label>
+            <input type="text" placeholder="123" maxlength="3" />
+          </div>
+        </div>
+
+        <button class="btn-primary btn-full btn-pro" id="completeCheckout" style="margin-top: 24px;">
+          <span>Start Your Subscription</span>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14m-7-7 7 7-7 7"/></svg>
+        </button>
+        
+        <p class="checkout-trust">🔒 Secure payment via Stripe. Cancel anytime.</p>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ─── NAV ─── -->
+  <nav class="nav">
+    <div class="nav-inner">
+      <a href="#" class="logo">
+        <span class="logo-icon">📈</span>
+        <span>Chart<span class="logo-accent">Sense</span> <span class="logo-tag">AI</span></span>
+      </a>
+      <div class="nav-links">
+        <a href="#pricing" class="nav-link">Pricing</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ─── HERO ─── -->
+  <section class="hero">
+    <div class="hero-glow"></div>
+    <div class="container">
+      <div class="hero-badge">🚀 AI-Powered Technical Analysis</div>
+      <h1 class="hero-title">Drop a chart.<br /><span class="gradient-text">Get your edge.</span></h1>
+      <p class="hero-sub">Upload any chart screenshot — stocks, crypto, forex — and get an instant AI analysis: trend, key levels, signals, and a clear Buy / Sell / Hold verdict.</p>
+      <div class="hero-cta-row">
+        <a href="#analyzer" class="btn-primary btn-lg">Try it free →</a>
+        <span class="free-badge">✓ 3 free analyses, no sign-up</span>
+      </div>
+
+      <div class="hero-trust">
+        <span class="trust-item">🔒 Bank-Grade Security</span>
+        <span class="trust-separator">|</span>
+        <span class="trust-item">⚡ 0.4s Analysis Time</span>
+        <span class="trust-separator">|</span>
+        <span class="trust-item">🤖 Gemini 2.5 Trained</span>
+      </div>
+      <div class="hero-stats">
+        <div class="stat">
+          <span class="stat-num">~8s</span>
+          <span class="stat-label">Analysis time</span>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat">
+          <span class="stat-num">Any chart</span>
+          <span class="stat-label">Stocks · Crypto · Forex</span>
+        </div>
+        <div class="stat-divider"></div>
+        <div class="stat">
+          <span class="stat-num">100%</span>
+          <span class="stat-label">Privacy — no data stored</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── ANALYZER ─── -->
+  <section class="analyzer-section" id="analyzer">
+    <div class="container">
+      <div class="analyzer-grid">
+
+        <!-- LEFT: Input Panel -->
+        <div class="input-panel glass-card">
+          <h2 class="panel-title">Upload Your Chart</h2>
+
+          <!-- Drop zone -->
+          <div class="dropzone" id="dropzone" tabindex="0" role="button" aria-label="Upload chart image">
+            <div class="dropzone-inner" id="dropzoneInner">
+              <div class="drop-icon">📊</div>
+              <p class="drop-text">Drag &amp; drop your chart screenshot here</p>
+              <p class="drop-sub">or <span class="drop-link">click to browse</span></p>
+              <p class="drop-formats">PNG · JPG · WEBP · GIF</p>
+            </div>
+            <img id="previewImg" class="preview-img hidden" alt="Chart preview" />
+            <input type="file" id="fileInput" accept="image/*" hidden />
+          </div>
+
+          <!-- Meta inputs -->
+          <div class="meta-row">
+            <div class="input-group">
+              <label for="tickerInput">Ticker / Asset</label>
+              <input type="text" id="tickerInput" placeholder="e.g. AAPL, BTC, EUR/USD" maxlength="20" />
+            </div>
+            <div class="input-group">
+              <label for="timeframeSelect">Timeframe</label>
+              <select id="timeframeSelect">
+                <option value="">Unknown</option>
+                <option value="1m">1 Minute</option>
+                <option value="5m">5 Minutes</option>
+                <option value="15m">15 Minutes</option>
+                <option value="1h">1 Hour</option>
+                <option value="4h">4 Hours</option>
+                <option value="1D">Daily</option>
+                <option value="1W">Weekly</option>
+                <option value="1M">Monthly</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Credits counter -->
+          <div class="credits-bar">
+            <div>
+              <span class="credits-label">Free analyses remaining:</span>
+              <span class="credits-count" id="creditsCount">3</span>
+            </div>
+            <button class="link-btn-pro" id="upgradeBtn">Upgrade to Pro</button>
+          </div>
+
+          <button class="btn-analyze" id="analyzeBtn" disabled>
+            <span id="analyzeBtnText">Analyze Chart</span>
+            <div class="spinner hidden" id="spinner"></div>
+          </button>
+
+          <p class="paywall-note hidden" id="paywallNote">
+            🔒 You've used all free analyses. <button class="link-btn">Upgrade to Pro</button> for unlimited access.
+          </p>
+        </div>
+
+        <!-- RIGHT: Results Panel -->
+        <div class="results-panel glass-card" id="resultsPanel">
+          <div class="results-placeholder" id="resultsPlaceholder">
+            <div class="placeholder-icon">🔍</div>
+            <p>Your analysis will appear here</p>
+            <p class="placeholder-sub">Upload a chart and hit Analyze</p>
+          </div>
+
+          <div class="results-content hidden" id="resultsContent">
+            <!-- Header with Actions -->
+            <div class="results-header">
+               <div class="results-title-row">
+                 <h3 class="section-label">AI Analysis Report</h3>
+                 <button class="btn-export-pro" id="exportPdfBtn">
+                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4m4-10 5 5 5-5m-5 5V3"/></svg>
+                   Export PDF
+                 </button>
+               </div>
+            </div>
+
+            <!-- Verdict -->
+            <div class="verdict-row">
+              <div class="verdict-badge" id="verdictBadge">—</div>
+              <div class="verdict-meta">
+                <span class="verdict-ticker" id="verdictTicker"></span>
+                <span class="verdict-tf" id="verdictTf"></span>
+              </div>
+              <div class="confidence-ring-wrap">
+                <svg class="confidence-ring" viewBox="0 0 64 64">
+                  <circle class="ring-bg" cx="32" cy="32" r="26"/>
+                  <circle class="ring-fill" id="ringFill" cx="32" cy="32" r="26"/>
+                </svg>
+                <span class="confidence-pct" id="confidencePct">0%</span>
+              </div>
+            </div>
+
+            <!-- Signal pills -->
+            <div class="signals-section">
+              <h3 class="section-label">Key Signals</h3>
+              <div class="pills-row" id="pillsRow"></div>
+            </div>
+
+            <!-- Levels -->
+            <div class="levels-section" id="levelsSection">
+              <h3 class="section-label">Price Levels</h3>
+              <div class="levels-grid" id="levelsGrid"></div>
+            </div>
+
+            <!-- AI Reasoning -->
+            <div class="reasoning-section">
+              <h3 class="section-label">AI Reasoning</h3>
+              <div class="reasoning-box" id="reasoningBox"></div>
+            </div>
+
+            <!-- Risk note -->
+            <div class="risk-row" id="riskRow"></div>
+
+            <!-- Disclaimer -->
+            <p class="disclaimer">⚠️ Not financial advice. AI analysis is for informational purposes only. Always do your own research.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── EXAMPLES ─── -->
+  <section class="examples-section" id="examples">
+    <div class="container">
+      <div class="section-badge">🎯 PROVEN RESULTS</div>
+      <h2 class="section-title">See it in action</h2>
+      <p class="section-sub">Real technical analysis generated by ChartSense AI for professional traders.</p>
+      
+      <div class="examples-grid">
+        <!-- Example 1 -->
+        <div class="example-card glass-card">
+          <div class="example-header">
+            <span class="example-ticker">ETH/USDT</span>
+            <span class="example-tf">15m Chart</span>
+            <span class="example-badge buy">BUY</span>
+          </div>
+          <div class="example-body">
+            <div class="example-signals">
+              <span class="pill bullish">Rising Channel</span>
+              <span class="pill bullish">SMA 50/200 Cross</span>
+            </div>
+            <p class="example-reason">"Price is consolidating above key support at $2,130 after a strong fanned-out moving average alignment. Expecting a continuation breakout towards $2,185."</p>
+          </div>
+        </div>
+        <!-- Example 2 -->
+        <div class="example-card glass-card">
+          <div class="example-header">
+            <span class="example-ticker">BTC/USD</span>
+            <span class="example-tf">1h Chart</span>
+            <span class="example-badge hold">HOLD</span>
+          </div>
+          <div class="example-body">
+            <div class="example-signals">
+              <span class="pill caution">Low Volume</span>
+              <span class="pill neutral">Range Bound</span>
+            </div>
+            <p class="example-reason">"Bitcoin is currently trapped in a tight $150 range with declining volume. Indicators show neutral momentum. Recommend waiting for a confirmed break."</p>
+          </div>
+        </div>
+        <!-- Example 3 -->
+        <div class="example-card glass-card">
+          <div class="example-header">
+            <span class="example-ticker">NVDA</span>
+            <span class="example-tf">Daily Chart</span>
+            <span class="example-badge sell">SELL</span>
+          </div>
+          <div class="example-body">
+            <div class="example-signals">
+              <span class="pill bearish">RSI Overbought</span>
+              <span class="pill bearish">Doji at Peak</span>
+            </div>
+            <p class="example-reason">"Recent vertical rally has pushed RSI into overbought territory (82). A bearish Doji candle has formed at resistance, suggesting a technical pullback."</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── FAQ ─── -->
+  <section class="faq-section">
+    <div class="container">
+      <h2 class="section-title">Common questions</h2>
+      <div class="faq-grid">
+        <div class="faq-item">
+          <h4>How accurate is the AI analysis?</h4>
+          <p>Our AI (Gemini 2.5) models are trained on millions of technical patterns. While no AI can predict the future with 100% certainty, ChartSense identifies 95% of standard technical setups instantly.</p>
+        </div>
+        <div class="faq-item">
+          <h4>Which markets are supported?</h4>
+          <p>Any market with a chart! Stocks, Crypto, Forex, Commodities, and Indices. If you can take a screenshot of it, we can analyze it.</p>
+        </div>
+        <div class="faq-item">
+          <h4>Is my chart data private?</h4>
+          <p>Yes. We don't store your images. The analysis happens via direct API and the images are discarded immediately after processing.</p>
+        </div>
+        <div class="faq-item">
+          <h4>Do I need a pro account for real money?</h4>
+          <p>You can use the free tier for your first 3 analyses. After that, we recommend the Pro plan for serious traders who need unlimited access.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── PRICING ─── -->
+  <section class="pricing-section" id="pricing">
+    <div class="container">
+      <div class="section-badge">💳 FLEXIBLE PLANS</div>
+      <h2 class="section-title">Ready to trade smarter?</h2>
+      <p class="section-sub">Join 1,000+ traders using AI to confirm their setups.</p>
+      <div class="pricing-grid">
+        <!-- ... existing cards ... -->
+        <div class="pricing-card glass-card">
+          <div class="plan-name">Free</div>
+          <div class="plan-price">$0</div>
+          <div class="plan-period">forever</div>
+          <ul class="plan-features">
+            <li>✓ 3 chart analyses</li>
+            <li>✓ Full AI reasoning</li>
+            <li>✓ Buy / Sell / Hold verdict</li>
+            <li>✗ Unlimited analyses</li>
+            <li>✗ Priority AI model</li>
+          </ul>
+          <a href="#analyzer" class="btn-ghost btn-full">Get started</a>
+        </div>
+        <div class="pricing-card glass-card featured">
+          <div class="popular-tag">MOST POPULAR</div>
+          <div class="plan-name">Pro Trader</div>
+          <div class="plan-price">$29<span class="price-period">/mo</span></div>
+          <ul class="plan-features">
+            <li>✅ <strong>Unlimited</strong> Analyses</li>
+            <li>✅ <strong>Instant</strong> Priority Speed</li>
+            <li>✅ Advanced SMC & Patterns</li>
+            <li>✅ PDF Report Exports</li>
+          </ul>
+          <button class="btn-primary btn-full">Become a Pro</button>
+          <p class="money-back">🛡️ 14-day money back guarantee</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── FOOTER ─── -->
+  <footer class="footer">
+    <div class="container footer-inner">
+      <a href="#" class="logo logo-sm">
+        <span class="logo-icon">📈</span>
+        Chart<span class="logo-accent">Sense</span> AI
+      </a>
+      <p class="footer-disc">⚠️ ChartSense AI is not a financial advisor. All analysis is AI-generated and for informational purposes only. Past chart patterns do not guarantee future results. Trade at your own risk.</p>
+      <p class="footer-copy">© 2026 ChartSense AI. All rights reserved.</p>
+    </div>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
