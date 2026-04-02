@@ -12,13 +12,26 @@ const PORT = process.env.PORT || 3001;
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 
-// ─── SERVE FRONTEND (DEVELOPMENT ONLY) ───
-if (process.env.NODE_ENV !== 'production') {
-  app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, '../index.html'));
-  });
-  app.use(express.static(path.join(__dirname, '../')));
-}
+// ─── SERVE FRONTEND (ROBUST FALLBACK) ───
+// This catch-all route ensures that if the function receives a request for / or any non-API path,
+// it serves the main index.html file instead of a blank error page.
+app.get('/', (req, res) => {
+  res.sendFile(path.resolve(__dirname, '../index.html'));
+});
+
+// Explicitly serve other static assets (for local development)
+app.use(express.static(path.resolve(__dirname, '../')));
+
+// ─── CATCH-ALL API 404 ───
+app.get('/api/*', (req, res) => {
+  res.status(404).json({ error: { message: 'API Endpoint not found: ' + req.path } });
+});
+
+// ─── GLOBAL CATCH-ALL (SPA/LANDING PAGE FALLBACK) ───
+app.get('*', (req, res) => {
+  if (req.path.startsWith('/api/')) return; // Skip if it's already an API 404
+  res.sendFile(path.resolve(__dirname, '../index.html'));
+});
 
 // ─── IN-MEMORY STATE ───
 const usageStats = {}; // { ip: { count: number, isPro: boolean } }
