@@ -12,26 +12,23 @@ const PORT = process.env.PORT || 3001;
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 
-// ─── SERVE FRONTEND ───
-// On Vercel, static files in the root are served automatically.
-// However, if the API is configured to handle the root, we serve the file manually.
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, '../index.html'));
-});
-
-// Explicitly serve other static assets if needed
-app.use(express.static(path.join(__dirname, '../')));
+// ─── SERVE FRONTEND (DEVELOPMENT ONLY) ───
+if (process.env.NODE_ENV !== 'production') {
+  app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, '../index.html'));
+  });
+  app.use(express.static(path.join(__dirname, '../')));
+}
 
 // ─── IN-MEMORY STATE ───
 const usageStats = {}; // { ip: { count: number, isPro: boolean } }
 const FREE_LIMIT = 3;
 
 // ─── ROUTES (API) ───
-const router = express.Router();
 
 // 1. Sync user status (credits + pro)
-router.get('/status', (req, res) => {
-  const ip = req.headers['x-forwarded-for'] || req.ip;
+app.get(['/api/status', '/status'], (req, res) => {
+  const ip = req.headers['x-forwarded-for'] || req.ip || 'unknown';
   if (!usageStats[ip]) {
     usageStats[ip] = { count: 0, isPro: false };
   }
@@ -43,8 +40,8 @@ router.get('/status', (req, res) => {
 });
 
 // 2. Mock Checkout (UPGRADE TO PRO)
-router.post('/checkout', (req, res) => {
-  const ip = req.headers['x-forwarded-for'] || req.ip;
+app.post(['/api/checkout', '/checkout'], (req, res) => {
+  const ip = req.headers['x-forwarded-for'] || req.ip || 'unknown';
   if (!usageStats[ip]) usageStats[ip] = { count: 0, isPro: false };
   
   usageStats[ip].isPro = true;
@@ -54,9 +51,13 @@ router.post('/checkout', (req, res) => {
 });
 
 // 3. Main Analysis Proxy
-router.post('/analyze', async (req, res) => {
-  const ip = req.headers['x-forwarded-for'] || req.ip;
+app.post(['/api/analyze', '/analyze'], async (req, res) => {
+  const ip = req.headers['x-forwarded-for'] || req.ip || 'unknown';
   const API_KEY = process.env.GEMINI_API_KEY;
+
+  if (!API_KEY) {
+    return res.status(500).json({ error: { message: 'Server configuration error: Missing API Key' } });
+  }
 
   if (!usageStats[ip]) usageStats[ip] = { count: 0, isPro: false };
 
@@ -96,21 +97,14 @@ router.post('/analyze', async (req, res) => {
   }
 });
 
-// Mount the router
-app.use('/api', router);
-// Support legacy/direct calls without /api if needed (for local)
-app.use(router);
-
-// ─── SERVE FRONTEND (NUCLEAR FALLBACK) ───
-// This ensures that even if Vercel routes incorrectly, the API can serve the UI.
-app.get('*', (req, res) => {
-  // If it's an API route that wasn't caught above, send 404 JSON
-  if (req.path.startsWith('/api/')) {
-    return res.status(404).json({ error: { message: 'API Endpoint not found' } });
-  }
-  // Otherwise, always serve the main website
-  res.sendFile(path.join(__dirname, '../index.html'));
+// ─── CATCH-ALL API 404 ───
+app.get('/api/*', (req, res) => {
+  res.status(404).json({ error: { message: 'API Endpoint not found: ' + req.path } });
 });
 
 // Standard Vercel Export
 module.exports = app;
+
+if (process.env.NODE_ENV !== 'production' && require.main === module) {
+  app.listen(PORT, () => console.log(`Local dev server running on http://localhost:${PORT}`));
+}
