@@ -2,8 +2,8 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const fetch = require('node-fetch');
-
 const path = require('path');
+const fs = require('fs');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -11,27 +11,6 @@ const PORT = process.env.PORT || 3001;
 // ─── MIDDLEWARE ───
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
-
-// ─── SERVE FRONTEND (ROBUST FALLBACK) ───
-// This catch-all route ensures that if the function receives a request for / or any non-API path,
-// it serves the main index.html file instead of a blank error page.
-app.get('/', (req, res) => {
-  res.sendFile(path.resolve(__dirname, '../index.html'));
-});
-
-// Explicitly serve other static assets (for local development)
-app.use(express.static(path.resolve(__dirname, '../')));
-
-// ─── CATCH-ALL API 404 ───
-app.get('/api/*', (req, res) => {
-  res.status(404).json({ error: { message: 'API Endpoint not found: ' + req.path } });
-});
-
-// ─── GLOBAL CATCH-ALL (SPA/LANDING PAGE FALLBACK) ───
-app.get('*', (req, res) => {
-  if (req.path.startsWith('/api/')) return; // Skip if it's already an API 404
-  res.sendFile(path.resolve(__dirname, '../index.html'));
-});
 
 // ─── IN-MEMORY STATE ───
 const usageStats = {}; // { ip: { count: number, isPro: boolean } }
@@ -110,9 +89,24 @@ app.post(['/api/analyze', '/analyze'], async (req, res) => {
   }
 });
 
-// ─── CATCH-ALL API 404 ───
+// ─── SERVE FRONTEND (ROBUST FALLBACK) ───
+// This ensures that even if Vercel routes incorrectly, the API can serve the UI from the 'public/' folder.
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
+});
+
+// Explicitly serve other static assets (for local development)
+app.use(express.static(path.join(__dirname, '..', 'public')));
+
+// Catch-all API 404
 app.get('/api/*', (req, res) => {
   res.status(404).json({ error: { message: 'API Endpoint not found: ' + req.path } });
+});
+
+// Global SPA fallback
+app.get('*', (req, res) => {
+  if (req.path.startsWith('/api/')) return; 
+  res.sendFile(path.join(__dirname, '..', 'public', 'index.html'));
 });
 
 // Standard Vercel Export
